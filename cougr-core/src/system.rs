@@ -314,12 +314,12 @@ mod tests {
 
     #[test]
     fn test_query_creation() {
-        let component_types = vec![
-            symbol_short!("position"),
-            symbol_short!("velocity"),
-        ];
+        let env = Env::default();
+        let mut component_types = Vec::new(&env);
+        component_types.push_back(symbol_short!("position"));
+        component_types.push_back(symbol_short!("velocity"));
         let query = Query::new(component_types);
-        
+
         let world = World::new();
         let results = query.execute(&world);
         assert_eq!(results.len(), 0);
@@ -327,10 +327,12 @@ mod tests {
 
     #[test]
     fn test_query_state() {
-        let component_types = vec![symbol_short!("position")];
+        let env = Env::default();
+        let mut component_types = Vec::new(&env);
+        component_types.push_back(symbol_short!("position"));
         let query = Query::new(component_types);
         let mut query_state = QueryState::new(query);
-        
+
         let world = World::new();
         let results = query_state.execute(&world);
         assert_eq!(results.len(), 0);

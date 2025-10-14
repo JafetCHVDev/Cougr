@@ -33,7 +33,7 @@ impl TryFromVal<Env, Val> for ComponentId {
 
 #[contracttype]
 #[repr(u32)]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ComponentStorage {
     Table = 0,
     Sparse = 1,
@@ -253,13 +253,10 @@ mod tests {
     fn test_component_creation() {
         let env = Env::default();
         let component_type = symbol_short!("test");
-        let data = Bytes::new(&env);
-        data.append(&1u8);
-        data.append(&2u8);
-        data.append(&3u8);
-        data.append(&4u8);
+        let mut data = Bytes::new(&env);
+        data.append(&Bytes::from_array(&env, &[1, 2, 3, 4]));
         let component = Component::new(component_type, data.clone());
-        
+
         assert_eq!(component.component_type(), &symbol_short!("test"));
         assert_eq!(component.data(), &data);
         assert_eq!(component.storage(), ComponentStorage::Table);
@@ -271,7 +268,7 @@ mod tests {
         assert_eq!(registry.component_count(), 0);
 
         let component_type = symbol_short!("test");
-        let id = registry.register_component(component_type);
+        let id = registry.register_component(component_type.clone());
         assert_eq!(registry.component_count(), 1);
         assert!(registry.is_registered(&component_type));
 

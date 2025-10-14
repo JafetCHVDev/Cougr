@@ -313,7 +313,7 @@ pub fn query_with_filter(world: &World, filter: &dyn QueryFilter) -> Vec<EntityI
 #[cfg(test)]
 mod tests {
     use super::*;
-    use soroban_sdk::Env;
+    use soroban_sdk::{Env, symbol_short};
 
     #[test]
     fn test_query_creation() {
@@ -377,12 +377,12 @@ mod tests {
     #[test]
     fn test_all_filters() {
         let filter = AllFilters::new()
-            .add_filter(WithComponent::new(symbol_short!("position")))
-            .add_filter(WithoutComponent::new(symbol_short!("dead")));
-        
+            .add_filter(symbol_short!("position"))
+            .add_filter(symbol_short!("dead"));
+
         let world = World::new();
         let entity_id = EntityId::new(1, 0);
-        
+
         // Should return false because no entity has position component
         assert!(!filter.matches(&world, entity_id));
     }
@@ -390,12 +390,12 @@ mod tests {
     #[test]
     fn test_any_filter() {
         let filter = AnyFilter::new()
-            .add_filter(WithComponent::new(symbol_short!("position")))
-            .add_filter(WithComponent::new(symbol_short!("velocity")));
-        
+            .add_filter(symbol_short!("position"))
+            .add_filter(symbol_short!("velocity"));
+
         let world = World::new();
         let entity_id = EntityId::new(1, 0);
-        
+
         // Should return false because no entity has either component
         assert!(!filter.matches(&world, entity_id));
     }

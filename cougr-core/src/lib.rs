@@ -81,18 +81,18 @@ pub mod prelude {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use soroban_sdk::testutils::{Address as _,};
+    use soroban_sdk::{Env, testutils::{Address as _,}};
 
     #[test]
     fn test_world_creation() {
-        let env = Env::default();
+        let _env = Env::default();
         let world = World::new();
         assert_eq!(world.entity_count(), 0);
     }
 
     #[test]
     fn test_entity_spawn() {
-        let env = Env::default();
+        let _env = Env::default();
         let mut world = World::new();
         let entity = world.spawn_empty();
         assert_eq!(world.entity_count(), 1);

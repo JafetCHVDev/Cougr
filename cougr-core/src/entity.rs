@@ -113,6 +113,11 @@ impl Entity {
     pub fn component_count(&self) -> usize {
         self.component_types.len().try_into().unwrap()
     }
+
+    /// Check if the entity has no components
+    pub fn is_empty(&self) -> bool {
+        self.component_types.is_empty()
+    }
 }
 
 // Soroban SDK trait implementations for Entity

@@ -88,23 +88,25 @@ mod tests {
     #[test]
     fn test_resource_creation() {
         let env = Env::default();
-        let resource_type = symbol_short!("test_resource");
-        let data = vec![env, 1, 2, 3, 4];
+        let resource_type = symbol_short!("testres");
+        let mut data = Bytes::new(&env);
+        data.append(&Bytes::from_array(&env, &[1, 2, 3, 4]));
         let resource = Resource::new(resource_type, data.clone());
-        
-        assert_eq!(resource.resource_type(), &symbol_short!("test_resource"));
+
+        assert_eq!(resource.resource_type(), &symbol_short!("testres"));
         assert_eq!(resource.data(), &data);
     }
 
     #[test]
     fn test_game_state_serialization() {
+        let env = Env::default();
         let mut game_state = GameState::new();
         game_state.increment_score(100);
         game_state.next_level();
-        
-        let data = game_state.serialize();
-        let deserialized = GameState::deserialize(&data).unwrap();
-        
+
+        let data = game_state.serialize(&env);
+        let deserialized = GameState::deserialize(&env, &data).unwrap();
+
         assert_eq!(game_state.score, deserialized.score);
         assert_eq!(game_state.level, deserialized.level);
         assert_eq!(game_state.is_game_over, deserialized.is_game_over);
