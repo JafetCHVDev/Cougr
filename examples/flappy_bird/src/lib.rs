@@ -263,7 +263,7 @@ mod tests {
     #[test]
     fn test_init_game() {
         let env = Env::default();
-        let contract_id = env.register_contract(None, FlappyBirdContract);
+        let contract_id = env.register(FlappyBirdContract, ());
         let client = FlappyBirdContractClient::new(&env, &contract_id);
 
         // Initialize game
@@ -274,7 +274,7 @@ mod tests {
         assert_eq!(score, 0);
 
         let game_over = client.check_game_over();
-        assert_eq!(game_over, false);
+        assert!(!game_over);
 
         // Check bird position
         let (x, y) = client.get_bird_pos();
@@ -285,7 +285,7 @@ mod tests {
     #[test]
     fn test_flap() {
         let env = Env::default();
-        let contract_id = env.register_contract(None, FlappyBirdContract);
+        let contract_id = env.register(FlappyBirdContract, ());
         let client = FlappyBirdContractClient::new(&env, &contract_id);
 
         // Initialize game
@@ -305,7 +305,7 @@ mod tests {
     #[test]
     fn test_gravity() {
         let env = Env::default();
-        let contract_id = env.register_contract(None, FlappyBirdContract);
+        let contract_id = env.register(FlappyBirdContract, ());
         let client = FlappyBirdContractClient::new(&env, &contract_id);
 
         // Initialize game
@@ -327,7 +327,7 @@ mod tests {
     #[test]
     fn test_game_over_on_ground_collision() {
         let env = Env::default();
-        let contract_id = env.register_contract(None, FlappyBirdContract);
+        let contract_id = env.register(FlappyBirdContract, ());
         let client = FlappyBirdContractClient::new(&env, &contract_id);
 
         // Initialize game
@@ -348,7 +348,7 @@ mod tests {
     #[test]
     fn test_score_increases() {
         let env = Env::default();
-        let contract_id = env.register_contract(None, FlappyBirdContract);
+        let contract_id = env.register(FlappyBirdContract, ());
         let client = FlappyBirdContractClient::new(&env, &contract_id);
 
         // Initialize game
@@ -380,7 +380,7 @@ mod tests {
     #[test]
     fn test_cannot_flap_after_game_over() {
         let env = Env::default();
-        let contract_id = env.register_contract(None, FlappyBirdContract);
+        let contract_id = env.register(FlappyBirdContract, ());
         let client = FlappyBirdContractClient::new(&env, &contract_id);
 
         // Initialize game
