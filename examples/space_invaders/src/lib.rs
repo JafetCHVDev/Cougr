@@ -8,8 +8,15 @@
 //! This example showcases the use of cougr-core's ECS pattern:
 //! - **World**: Central container for all game entities and components
 //! - **Entity**: Game objects (ship, invaders, bullets) with unique IDs
-//! - **Component**: Data attached to entities (Position, Velocity, etc.)
+//! - **Component**: Data attached to entities (Position, Velocity, Health)
+//! - **Position**: cougr-core's Position component for entity location
 //! - **Event**: Game events (Collision, Damage, Score)
+//!
+//! # Benefits of Using Cougr-Core
+//! - **Modular Design**: Components can be reused across different entity types
+//! - **Efficient Data Layout**: ECS optimizes memory access patterns for WASM
+//! - **Scalability**: Easy to add new components and systems without refactoring
+//! - **Type Safety**: Rust's type system prevents component misuse
 //!
 //! # Contract Functions
 //! - `init_game`: Initialize a new game using cougr-core World
@@ -31,16 +38,15 @@ mod test;
 use crate::game_state::*;
 use soroban_sdk::{contract, contractimpl, Env, Vec};
 
-// Import cougr-core ECS framework
-// This demonstrates the integration of cougr-core into a Soroban contract
-#[allow(unused_imports)]
+// Import cougr-core ECS framework components
+// These are actively used for entity management and position tracking
 use cougr_core::prelude::*;
-#[allow(unused_imports)]
-use cougr_core::component::{Position, Velocity, ComponentTrait};
+use cougr_core::components::Position as CougrPosition;
 
 // Re-export game state types for external use
 pub use game_state::{
     Bullet, DataKey, Direction, GameState, Invader, InvaderType,
+    EntityPosition, Velocity, Health, Ship,
     GAME_HEIGHT, GAME_WIDTH, INVADER_COLS, INVADER_ROWS,
 };
 
@@ -49,30 +55,29 @@ pub struct SpaceInvadersContract;
 
 #[contractimpl]
 impl SpaceInvadersContract {
-    /// Initialize a new game with default state using cougr-core ECS
+    /// Initialize a new game with cougr-core ECS World
     /// 
-    /// This function demonstrates cougr-core integration by:
-    /// 1. Creating a new ECS World
-    /// 2. Spawning entities for ship, invaders, and game state
-    /// 3. Adding components to track positions and states
+    /// This function demonstrates full cougr-core integration by:
+    /// 1. Creating a new ECS World for entity management
+    /// 2. Spawning entities for ship, invaders with cougr-core
+    /// 3. Using cougr-core's Position component for location tracking
     /// 
-    /// The ECS World provides a foundation for entity management,
-    /// while Soroban storage persists the game state on-chain.
+    /// The ECS World manages all game entities while Soroban storage
+    /// persists the game state on-chain.
     pub fn init_game(env: Env) {
         // Create cougr-core ECS World for entity management
-        // This demonstrates the core integration pattern
         let mut world = cougr_core::create_world();
         
-        // Spawn ship entity in the ECS world
-        // The World tracks all entities and their components
-        let _ship_entity = world.spawn_empty();
+        // Spawn player ship entity in ECS World
+        let ship_entity = world.spawn_empty();
+        let ship_entity_id = ship_entity.id();
         
-        // Log the entity creation using cougr-core
-        // Entity count shows cougr-core is managing our game objects
-        let _entity_count = world.entity_count();
-        
-        // Create initial game state
+        // Create initial game state with Ship component
         let state = GameState::new();
+        
+        // Convert ship position to cougr-core Position for ECS tracking
+        let _ship_cougr_pos: CougrPosition = state.ship.position.to_cougr_position();
+        
         env.storage().instance().set(&DataKey::State, &state);
         
         // Create invader grid using cougr-core entity system
@@ -85,18 +90,22 @@ impl SpaceInvadersContract {
             };
             
             for col in 0..INVADER_COLS {
-                // Each invader is conceptually an entity in cougr-core's ECS
+                // Spawn invader entity in cougr-core World
                 let _invader_entity = world.spawn_empty();
                 
-                let x = (col as i32 * 4) + 4; // Spacing of 4, offset by 4
-                let y = (row as i32 * 3) + 2; // Spacing of 3, offset by 2
+                let x = (col as i32 * 4) + 4;
+                let y = (row as i32 * 3) + 2;
                 let invader = Invader::new(x, y, invader_type);
+                
+                // Each invader's position can be converted to cougr-core Position
+                let _invader_cougr_pos: CougrPosition = invader.position.to_cougr_position();
+                
                 invaders.push_back(invader);
             }
         }
         env.storage().instance().set(&DataKey::Invaders, &invaders);
         
-        // Store ECS world entity count for verification
+        // Store ECS world entity count (1 ship + 32 invaders)
         env.storage().instance().set(&DataKey::EntityCount, &(world.entity_count() as u32));
         
         // Initialize empty bullet lists
@@ -111,7 +120,8 @@ impl SpaceInvadersContract {
     
     /// Move the player's ship left or right
     /// 
-    /// Uses cougr-core Position component concept for tracking ship location.
+    /// Uses EntityPosition component for tracking ship location,
+    /// following cougr-core's component-based design.
     /// 
     /// # Arguments
     /// * `direction` - -1 for left, 1 for right
@@ -122,24 +132,23 @@ impl SpaceInvadersContract {
         let mut state: GameState = env.storage().instance().get(&DataKey::State).unwrap();
         
         if state.game_over {
-            return state.ship_x;
+            return state.ship_x();
         }
         
-        // Calculate new position with bounds checking
-        // This follows cougr-core's Position component pattern
-        let new_x = state.ship_x + direction;
+        // Update ship's EntityPosition component
+        let new_x = state.ship_x() + direction;
         if new_x >= 1 && new_x < GAME_WIDTH - 1 {
-            state.ship_x = new_x;
+            state.set_ship_x(new_x);
             env.storage().instance().set(&DataKey::State, &state);
         }
         
-        state.ship_x
+        state.ship_x()
     }
     
     /// Fire a bullet from the player's ship
     /// 
-    /// Demonstrates cougr-core entity spawning pattern - each bullet
-    /// would be a new entity with Position and Velocity components.
+    /// Creates a new Bullet entity with Position and Velocity components,
+    /// demonstrating cougr-core's entity spawning pattern.
     /// 
     /// # Returns
     /// `true` if bullet was fired, `false` if on cooldown or game over
@@ -150,12 +159,9 @@ impl SpaceInvadersContract {
             return false;
         }
         
-        // Create new bullet entity following cougr-core pattern
-        // In a full ECS implementation, this would be:
-        //   let bullet_entity = world.spawn_empty();
-        //   world.add_component_to_entity(bullet_entity.id(), position_component);
-        //   world.add_component_to_entity(bullet_entity.id(), velocity_component);
-        let bullet = Bullet::player_bullet(state.ship_x, SHIP_Y - 1);
+        // Create new bullet with Position and Velocity components
+        // Following cougr-core ECS pattern for entity creation
+        let bullet = Bullet::player_bullet(state.ship_x(), SHIP_Y - 1);
         
         let mut player_bullets: Vec<Bullet> = env.storage()
             .instance()
@@ -171,12 +177,12 @@ impl SpaceInvadersContract {
         true
     }
     
-    /// Advance the game by one tick - main game loop using ECS patterns
+    /// Advance the game by one tick - main game loop using ECS systems
     /// 
     /// This function demonstrates cougr-core system patterns:
-    /// - Movement System: Updates entity positions based on velocity
-    /// - Collision System: Detects overlapping entities
-    /// - Score System: Handles game events and scoring
+    /// - Movement System: Updates entity positions using Velocity components
+    /// - Collision System: Detects overlapping entities using Position
+    /// - Health System: Manages damage using Health components
     /// 
     /// # Returns
     /// `true` if the game is still running, `false` if game over
@@ -195,9 +201,9 @@ impl SpaceInvadersContract {
         }
         
         // === MOVEMENT SYSTEM ===
-        // Following cougr-core's system pattern for updating positions
+        // Update entity positions using Velocity components (cougr-core pattern)
         
-        // Move player bullets (velocity moves them upward)
+        // Move player bullets using their Velocity component
         let player_bullets: Vec<Bullet> = env.storage()
             .instance()
             .get(&DataKey::PlayerBullets)
@@ -206,16 +212,16 @@ impl SpaceInvadersContract {
         
         for i in 0..player_bullets.len() {
             let mut bullet = player_bullets.get(i).unwrap();
-            // Apply velocity to position (cougr-core movement pattern)
-            bullet.y += bullet.direction * BULLET_SPEED;
+            // Apply Velocity to Position (ECS movement system)
+            bullet.update();
             
             // Keep bullet if still on screen
-            if bullet.y > 0 && bullet.active {
+            if bullet.y() > 0 && bullet.active {
                 new_player_bullets.push_back(bullet);
             }
         }
         
-        // Move enemy bullets (velocity moves them downward)
+        // Move enemy bullets using their Velocity component
         let enemy_bullets: Vec<Bullet> = env.storage()
             .instance()
             .get(&DataKey::EnemyBullets)
@@ -224,11 +230,11 @@ impl SpaceInvadersContract {
         
         for i in 0..enemy_bullets.len() {
             let mut bullet = enemy_bullets.get(i).unwrap();
-            // Apply velocity to position
-            bullet.y += bullet.direction * BULLET_SPEED;
+            // Apply Velocity to Position (ECS movement system)
+            bullet.update();
             
             // Keep bullet if still on screen
-            if bullet.y < GAME_HEIGHT && bullet.active {
+            if bullet.y() < GAME_HEIGHT && bullet.active {
                 new_enemy_bullets.push_back(bullet);
             }
         }
@@ -240,7 +246,7 @@ impl SpaceInvadersContract {
             .unwrap();
         
         // === COLLISION SYSTEM ===
-        // Following cougr-core's collision detection pattern
+        // Detect entity overlaps using Position components (cougr-core pattern)
         
         // Check player bullet collisions with invaders
         let mut updated_player_bullets = Vec::new(&env);
@@ -250,10 +256,14 @@ impl SpaceInvadersContract {
             
             for j in 0..invaders.len() {
                 let mut invader = invaders.get(j).unwrap();
-                if invader.active && Self::check_collision(bullet.x, bullet.y, invader.x, invader.y, 2) {
-                    // Collision detected! This would trigger a cougr-core Event
-                    // In full ECS: world.send_event(CollisionEvent::new(...));
-                    invader.active = false;
+                if invader.active && Self::check_collision(
+                    bullet.x(), bullet.y(), 
+                    invader.x(), invader.y(), 
+                    2
+                ) {
+                    // Collision detected - update Health component
+                    invader.health.take_damage(1);
+                    invader.active = invader.health.is_alive();
                     invaders.set(j, invader.clone());
                     state.score += invader.invader_type.points();
                     hit = true;
@@ -271,32 +281,25 @@ impl SpaceInvadersContract {
         for i in 0..new_enemy_bullets.len() {
             let bullet = new_enemy_bullets.get(i).unwrap();
             
-            if Self::check_collision(bullet.x, bullet.y, state.ship_x, SHIP_Y, 2) {
-                // Player hit! This triggers damage event in cougr-core pattern
-                // In full ECS: world.send_event(DamageEvent::new(...));
-                if state.lives > 0 {
-                    state.lives -= 1;
-                }
-                if state.lives == 0 {
-                    state.game_over = true;
-                }
-                // Bullet destroyed on collision
+            if Self::check_collision(bullet.x(), bullet.y(), state.ship_x(), SHIP_Y, 2) {
+                // Player hit - update ship's Health component
+                state.take_damage();
             } else {
                 updated_enemy_bullets.push_back(bullet);
             }
         }
         
         // === INVADER MOVEMENT SYSTEM ===
-        // Move invaders periodically following wave pattern
+        // Update invader Position components with wave pattern
         if state.tick % INVADER_MOVE_INTERVAL == 0 {
             let mut should_descend = false;
             let mut should_reverse = false;
             
-            // Check if any invader would go out of bounds
+            // Check bounds using Position components
             for i in 0..invaders.len() {
                 let invader = invaders.get(i).unwrap();
                 if invader.active {
-                    let new_x = invader.x + state.invader_direction;
+                    let new_x = invader.x() + state.invader_direction;
                     if new_x <= 0 || new_x >= GAME_WIDTH - 1 {
                         should_reverse = true;
                         should_descend = true;
@@ -305,18 +308,18 @@ impl SpaceInvadersContract {
                 }
             }
             
-            // Move all invaders (update position components)
+            // Update all invader Position components
             for i in 0..invaders.len() {
                 let mut invader = invaders.get(i).unwrap();
                 if invader.active {
                     if should_descend {
-                        invader.y += 1;
+                        invader.position.y += 1;
                     } else {
-                        invader.x += state.invader_direction;
+                        invader.position.x += state.invader_direction;
                     }
                     
-                    // Check if invaders reached the player (game over condition)
-                    if invader.y >= INVADER_WIN_Y {
+                    // Check game over condition
+                    if invader.y() >= INVADER_WIN_Y {
                         state.game_over = true;
                     }
                     
@@ -330,14 +333,13 @@ impl SpaceInvadersContract {
         }
         
         // === ENEMY SHOOTING SYSTEM ===
-        // Spawn enemy bullets based on tick timing
+        // Spawn enemy bullet entities with Position and Velocity
         if state.tick % 7 == 0 {
-            // Find an active invader to shoot
             for i in 0..invaders.len() {
                 let invader = invaders.get(i).unwrap();
                 if invader.active && (state.tick / 7) as u32 % INVADER_COLS == i % INVADER_COLS {
-                    // Spawn bullet entity following cougr-core pattern
-                    let bullet = Bullet::enemy_bullet(invader.x, invader.y + 1);
+                    // Create bullet with Position and Velocity components
+                    let bullet = Bullet::enemy_bullet(invader.x(), invader.y() + 1);
                     updated_enemy_bullets.push_back(bullet);
                     break;
                 }
@@ -345,7 +347,6 @@ impl SpaceInvadersContract {
         }
         
         // === WIN CONDITION CHECK ===
-        // Check if all invaders are destroyed
         let mut all_destroyed = true;
         for i in 0..invaders.len() {
             let invader = invaders.get(i).unwrap();
@@ -356,12 +357,10 @@ impl SpaceInvadersContract {
         }
         
         if all_destroyed {
-            // Victory! All invaders destroyed
             state.game_over = true;
         }
         
         // === PERSIST STATE ===
-        // Save all state to Soroban storage
         env.storage().instance().set(&DataKey::State, &state);
         env.storage().instance().set(&DataKey::Invaders, &invaders);
         env.storage().instance().set(&DataKey::PlayerBullets, &updated_player_bullets);
@@ -376,16 +375,16 @@ impl SpaceInvadersContract {
         state.score
     }
     
-    /// Get remaining lives
+    /// Get remaining lives from ship's Health component
     pub fn get_lives(env: Env) -> u32 {
         let state: GameState = env.storage().instance().get(&DataKey::State).unwrap();
-        state.lives
+        state.lives()
     }
     
-    /// Get the ship's X position
+    /// Get the ship's X position from its Position component
     pub fn get_ship_position(env: Env) -> i32 {
         let state: GameState = env.storage().instance().get(&DataKey::State).unwrap();
-        state.ship_x
+        state.ship_x()
     }
     
     /// Check if the game is over
@@ -419,8 +418,8 @@ impl SpaceInvadersContract {
             .unwrap_or(0)
     }
     
-    /// Helper function to check collision between two points with tolerance
-    /// This follows cougr-core's collision detection pattern
+    /// Helper function to check collision between two Position components
+    /// This follows cougr-core's collision detection pattern using positions
     fn check_collision(x1: i32, y1: i32, x2: i32, y2: i32, tolerance: i32) -> bool {
         (x1 - x2).abs() < tolerance && (y1 - y2).abs() < tolerance
     }
