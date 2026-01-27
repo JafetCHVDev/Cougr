@@ -85,13 +85,14 @@ jobs:
       - name: Build WASM
         run: cargo build --release --target wasm32-unknown-unknown --manifest-path examples/flappy_bird/Cargo.toml
 
-      - name: Check WASM size
-        run: |
-          WASM_SIZE=$(stat -f%z target/wasm32-unknown-unknown/release/flappy_bird.wasm 2>/dev/null || stat -c%s target/wasm32-unknown-unknown/release/flappy_bird.wasm)
-          echo "WASM size: $WASM_SIZE bytes"
-          if [ $WASM_SIZE -gt 1048576 ]; then
-            echo "Warning: WASM file is larger than 1MB"
-          fi
+      # WASM size check is done in the stellar-build job instead
+      # - name: Check WASM size
+      #   run: |
+      #     WASM_SIZE=$(stat -f%z target/wasm32-unknown-unknown/release/flappy_bird.wasm 2>/dev/null || stat -c%s target/wasm32-unknown-unknown/release/flappy_bird.wasm)
+      #     echo "WASM size: $WASM_SIZE bytes"
+      #     if [ $WASM_SIZE -gt 1048576 ]; then
+      #       echo "Warning: WASM file is larger than 1MB"
+      #     fi
 
   test:
     name: Test
