@@ -48,8 +48,14 @@ impl ComponentTrait for PaddleComponent {
 
     fn serialize(&self, env: &Env) -> soroban_sdk::Bytes {
         let mut bytes = soroban_sdk::Bytes::new(env);
-        bytes.append(&soroban_sdk::Bytes::from_array(env, &self.player_id.to_be_bytes()));
-        bytes.append(&soroban_sdk::Bytes::from_array(env, &self.y_position.to_be_bytes()));
+        bytes.append(&soroban_sdk::Bytes::from_array(
+            env,
+            &self.player_id.to_be_bytes(),
+        ));
+        bytes.append(&soroban_sdk::Bytes::from_array(
+            env,
+            &self.y_position.to_be_bytes(),
+        ));
         bytes
     }
 
@@ -57,19 +63,14 @@ impl ComponentTrait for PaddleComponent {
         if data.len() != 8 {
             return None;
         }
-        let player_id = u32::from_be_bytes([
-            data.get(0)?,
-            data.get(1)?,
-            data.get(2)?,
-            data.get(3)?,
-        ]);
-        let y_position = i32::from_be_bytes([
-            data.get(4)?,
-            data.get(5)?,
-            data.get(6)?,
-            data.get(7)?,
-        ]);
-        Some(Self { player_id, y_position })
+        let player_id =
+            u32::from_be_bytes([data.get(0)?, data.get(1)?, data.get(2)?, data.get(3)?]);
+        let y_position =
+            i32::from_be_bytes([data.get(4)?, data.get(5)?, data.get(6)?, data.get(7)?]);
+        Some(Self {
+            player_id,
+            y_position,
+        })
     }
 }
 
@@ -127,9 +128,18 @@ impl ComponentTrait for ScoreComponent {
 
     fn serialize(&self, env: &Env) -> soroban_sdk::Bytes {
         let mut bytes = soroban_sdk::Bytes::new(env);
-        bytes.append(&soroban_sdk::Bytes::from_array(env, &self.player1_score.to_be_bytes()));
-        bytes.append(&soroban_sdk::Bytes::from_array(env, &self.player2_score.to_be_bytes()));
-        bytes.append(&soroban_sdk::Bytes::from_array(env, &[if self.game_active { 1u8 } else { 0u8 }]));
+        bytes.append(&soroban_sdk::Bytes::from_array(
+            env,
+            &self.player1_score.to_be_bytes(),
+        ));
+        bytes.append(&soroban_sdk::Bytes::from_array(
+            env,
+            &self.player2_score.to_be_bytes(),
+        ));
+        bytes.append(&soroban_sdk::Bytes::from_array(
+            env,
+            &[if self.game_active { 1u8 } else { 0u8 }],
+        ));
         bytes
     }
 
@@ -137,20 +147,16 @@ impl ComponentTrait for ScoreComponent {
         if data.len() != 9 {
             return None;
         }
-        let player1_score = u32::from_be_bytes([
-            data.get(0)?,
-            data.get(1)?,
-            data.get(2)?,
-            data.get(3)?,
-        ]);
-        let player2_score = u32::from_be_bytes([
-            data.get(4)?,
-            data.get(5)?,
-            data.get(6)?,
-            data.get(7)?,
-        ]);
+        let player1_score =
+            u32::from_be_bytes([data.get(0)?, data.get(1)?, data.get(2)?, data.get(3)?]);
+        let player2_score =
+            u32::from_be_bytes([data.get(4)?, data.get(5)?, data.get(6)?, data.get(7)?]);
         let game_active = data.get(8)? != 0;
-        Some(Self { player1_score, player2_score, game_active })
+        Some(Self {
+            player1_score,
+            player2_score,
+            game_active,
+        })
     }
 }
 
