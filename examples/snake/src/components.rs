@@ -402,7 +402,10 @@ mod tests {
 
         // Data components use Table storage (dense access patterns)
         assert_eq!(Position::default_storage(), ComponentStorage::Table);
-        assert_eq!(DirectionComponent::default_storage(), ComponentStorage::Table);
+        assert_eq!(
+            DirectionComponent::default_storage(),
+            ComponentStorage::Table
+        );
         assert_eq!(SnakeSegment::default_storage(), ComponentStorage::Table);
     }
 }

@@ -1,6 +1,6 @@
 use crate::components::{Direction, DirectionComponent, Food, Position, SnakeSegment};
-use cougr_core::component::ComponentTrait;
 use crate::simple_world::{EntityId, SimpleWorld};
+use cougr_core::component::ComponentTrait;
 use soroban_sdk::{symbol_short, Env, Vec};
 
 /// Segment data for sorting (entity_id, index, x, y)
