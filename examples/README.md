@@ -60,6 +60,7 @@ These are the maintained reference architectures. They are held to the full stan
 | `guild_arena` | **Authentication & recovery / canonical** | Account abstraction, social recovery, multi-device authorization | - |
 | `season_ladder` | **Standards layer / canonical** | Season standings with integer-only ratings, `Ownable` admin, and a `Pausable` emergency stop | - |
 | `staked_tournament` | **Token escrow / canonical** | Independent match stakes, automatic bracket advancement, and no-show refunds | [preview.svg](./staked_tournament/preview.svg) |
+| `sokoban` | **Puzzle / canonical** | `ArchetypeWorld` and `ArchetypeQueryBuilder` - push-crate puzzle with a `without_component` win-check query | - |
 
 ### Transitional examples
 
