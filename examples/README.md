@@ -37,6 +37,7 @@ New contributors and external developers should read the examples in the followi
 8. **`dice_duel`** - `circuits::FairDiceBuilder` for fair dice roll with on-chain Groth16 verification (Experimental).
 9. **`blind_auction`** - `circuits::SealedBidBuilder` for sealed-bid auctions with commit-reveal ZK proofs (Experimental).
 10. **`guild_arena`** - Account recovery and multi-device authorization. Demonstrates `auth` and `ops` standards.
+11. **`sokoban`** - `ArchetypeWorld` and `ArchetypeQueryBuilder`, the archetype-grouped ECS backend and its `without_component` query, as an alternative to the `SimpleWorld` backend every example above uses.
 
 After reading the canonical examples, explore transitional examples for additional patterns and genre-specific techniques.
 
