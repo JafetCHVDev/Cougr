@@ -23,6 +23,25 @@
 - **CLI CI workflow** - lints and tests `cougr-cli`, then generates each template and
   runs `cargo fmt`, `clippy`, `cargo test`, and a `wasm32v1-none` release build against it
 
+### Fixed
+
+- **`zk::merkle::proof::verify_inclusion`** - a proof's `leaf_index` was never checked
+  against the position its `path_bits` actually walk, so a proof for one leaf could be
+  relabelled to claim another leaf's position and still verify. `verify_inclusion` now
+  rejects a `path_bits`/`leaf_index` mismatch (`ZKError::LeafIndexMismatch`), an
+  out-of-range `leaf_index` (`ZKError::LeafOutOfBounds`), and `depth > MAX_DEPTH`
+  (`ZKError::MaxDepthExceeded`, previously an overflow panic on `path_bits >> i` for
+  `depth > 32`) before hashing. `zk::merkle::tree::verify_proof`, the in-memory
+  equivalent, gets the same `path_indices`/`leaf_index` check
+- **`zk::merkle::proof::verify_inclusion_at_depth`** - new function that additionally
+  pins the proof to an exact expected depth, so a shorter-than-expected proof (including
+  a degenerate `depth = 0` proof with `leaf == root`) is rejected even though it would
+  otherwise be internally consistent
+- **`examples/battleship`**, **`examples/treasure_hunt`** - both pin the expected proof
+  depth and recheck `path_bits` against the claimed cell locally, since they still
+  depend on the published `cougr-core = "1.1.0"` and won't pick up the core fix until a
+  release
+
 ## 1.1.0
 
 ### Added
