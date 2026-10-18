@@ -43,6 +43,11 @@ fn entity_at<T: ComponentTrait>(
     None
 }
 
+/// True if `(x, y)` lies within the declared `width x height` grid.
+fn in_bounds(x: i32, y: i32, width: u32, height: u32) -> bool {
+    x >= 0 && y >= 0 && (x as u32) < width && (y as u32) < height
+}
+
 /// True once every `Crate` entity also carries `OnGoal`: crates that are not
 /// yet parked on a goal are exactly the entities keeping the level unsolved.
 pub fn is_solved(world: &ArchetypeWorld, env: &Env) -> bool {
@@ -71,12 +76,20 @@ pub fn try_push(world: &mut ArchetypeWorld, env: &Env, dx: i32, dy: i32) {
     let player_pos = position_of(world, env, PLAYER_ID);
     let dest = (player_pos.x + dx, player_pos.y + dy);
 
+    if !in_bounds(dest.0, dest.1, meta.width, meta.height) {
+        panic!("out of bounds");
+    }
+
     if entity_at::<Wall>(world, env, dest.0, dest.1).is_some() {
         panic!("blocked by wall");
     }
 
     if let Some(crate_id) = entity_at::<Crate>(world, env, dest.0, dest.1) {
         let crate_dest = (dest.0 + dx, dest.1 + dy);
+
+        if !in_bounds(crate_dest.0, crate_dest.1, meta.width, meta.height) {
+            panic!("out of bounds");
+        }
 
         if entity_at::<Wall>(world, env, crate_dest.0, crate_dest.1).is_some() {
             panic!("crate blocked by wall");

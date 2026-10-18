@@ -58,10 +58,18 @@ impl SokobanContract {
     ///
     /// `tiles` is a row-major grid of length `width * height` using the
     /// `TILE_*` codes above: exactly one player tile, and an equal, positive
-    /// number of crate and goal tiles. Replaces any previously initialized
-    /// level. Requires `player`'s authorization.
+    /// number of crate and goal tiles. If a level is already stored, only
+    /// the same `player` may replace it; a different address is rejected.
+    /// Requires `player`'s authorization.
     pub fn init_level(env: Env, player: Address, width: u32, height: u32, tiles: Vec<u32>) {
         player.require_auth();
+
+        let existing_player: Option<Address> = env.storage().instance().get(&PLAYER_ADDR_KEY);
+        if let Some(existing) = existing_player {
+            if existing != player {
+                panic!("level already initialized by another player");
+            }
+        }
 
         if width == 0 || height == 0 {
             panic!("level has zero dimension");

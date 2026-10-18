@@ -12,7 +12,7 @@ Every other canonical example builds on `SimpleWorld`. Sokoban is the canonical 
 
 | Function | Parameters | Returns | Description |
 | --- | --- | --- | --- |
-| `init_level` | `player: Address, width: u32, height: u32, tiles: Vec<u32>` | `()` | Validates and loads a level from a row-major tile grid. Requires `player`'s authorization. Replaces any level this contract instance previously held. |
+| `init_level` | `player: Address, width: u32, height: u32, tiles: Vec<u32>` | `()` | Validates and loads a level from a row-major tile grid. Requires `player`'s authorization. The same `player` may call this again to replace their level; a different address is rejected if a level is already stored. |
 | `push` | `player: Address, direction: u32` | `()` | Moves the player one tile, pushing a crate ahead of it if present. Requires `player`'s authorization and that `player` matches the address that called `init_level`. |
 | `level_meta` | - | `LevelMeta` | Move count, solved flag, and level dimensions. |
 | `player_position` | - | `Position` | The player's current position. |
@@ -31,7 +31,7 @@ Every other canonical example builds on `SimpleWorld`. Sokoban is the canonical 
 
 A level needs exactly one player tile and an equal, positive number of crate and goal tiles, and neither dimension may exceed `MAX_DIM` (20). `push` takes a direction from `NORTH` / `EAST` / `SOUTH` / `WEST` (`+y` / `+x` / `-y` / `-x`), matching the convention `spawn_and_move` uses for the same four constants.
 
-Levels are not bounds-checked beyond that; see Known limitations.
+Pushing the player, or a crate it is pushing, outside `0..width` by `0..height` panics with `"out of bounds"`.
 
 ## Architecture overview
 
@@ -75,7 +75,6 @@ stellar contract build
 
 ## Known limitations
 
-- Levels are not bounds-checked. A level designer must surround the play area with `TILE_WALL` tiles, matching the classic Sokoban convention, or the player and crates can move into the unbounded space outside the declared grid.
-- One level per contract instance, with no multi-level or save-slot support. A new level means deploying a new contract instance.
+- One level per contract instance, with no multi-level or save-slot support.
 - The whole world is read and rewritten on every call. That scales fine for a puzzle-sized grid but is not the storage pattern to copy for a world meant to hold many independent or large levels.
 - No state-change events are emitted; `impl_component_observed!` is not used, so clients must poll `level_meta` / `player_position` rather than subscribe to updates.

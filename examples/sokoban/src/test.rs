@@ -14,11 +14,23 @@ fn tiles(env: &Env, codes: &[u32]) -> Vec<u32> {
     Vec::from_slice(env, codes)
 }
 
-/// A 3x1 corridor: player, one crate, one goal two tiles east of the player.
-/// Pushing east once shoves the crate onto the goal and solves the level.
+/// A 3x2 grid: player, one crate, one goal two tiles east of the player on
+/// the bottom row, with an empty row above. Pushing east once shoves the
+/// crate onto the goal and solves the level; pushing north moves into the
+/// empty row above without leaving the grid.
 fn corridor_level(env: &Env, client: &SokobanContractClient<'static>, player: &Address) {
-    let grid = tiles(env, &[TILE_PLAYER, TILE_CRATE, TILE_GOAL]);
-    client.init_level(player, &3, &1, &grid);
+    let grid = tiles(
+        env,
+        &[
+            TILE_PLAYER,
+            TILE_CRATE,
+            TILE_GOAL,
+            TILE_EMPTY,
+            TILE_EMPTY,
+            TILE_EMPTY,
+        ],
+    );
+    client.init_level(player, &3, &2, &grid);
 }
 
 // ─── Initialization ──────────────────────────────────────────────────────────
@@ -34,7 +46,7 @@ fn init_level_sets_player_position_and_meta() {
     let meta = client.level_meta();
     assert_eq!(meta.move_count, 0);
     assert!(!meta.solved);
-    assert_eq!((meta.width, meta.height), (3, 1));
+    assert_eq!((meta.width, meta.height), (3, 2));
 }
 
 // ─── Happy path / rule and invariant ─────────────────────────────────────────
@@ -102,6 +114,27 @@ fn push_crate_into_crate_panics() {
     client.push(&player, &EAST);
 }
 
+// ─── Bounds checking ──────────────────────────────────────────────────────────
+
+#[test]
+#[should_panic(expected = "out of bounds")]
+fn push_player_out_of_bounds_panics() {
+    let (env, player, client) = setup();
+    corridor_level(&env, &client, &player);
+
+    client.push(&player, &WEST);
+}
+
+#[test]
+#[should_panic(expected = "out of bounds")]
+fn push_crate_out_of_bounds_panics() {
+    let (env, player, client) = setup();
+    let grid = tiles(&env, &[TILE_CRATE, TILE_PLAYER, TILE_GOAL]);
+    client.init_level(&player, &3, &1, &grid);
+
+    client.push(&player, &WEST);
+}
+
 // ─── Post-win and authorization ──────────────────────────────────────────────
 
 #[test]
@@ -122,6 +155,17 @@ fn push_from_wrong_caller_panics() {
 
     let impostor = Address::generate(&env);
     client.push(&impostor, &EAST);
+}
+
+#[test]
+#[should_panic(expected = "level already initialized by another player")]
+fn init_level_from_second_player_on_live_level_panics() {
+    let (env, player, client) = setup();
+    corridor_level(&env, &client, &player);
+
+    let other = Address::generate(&env);
+    let grid = tiles(&env, &[TILE_PLAYER, TILE_CRATE, TILE_GOAL]);
+    client.init_level(&other, &3, &1, &grid);
 }
 
 // ─── Invalid levels ───────────────────────────────────────────────────────────
